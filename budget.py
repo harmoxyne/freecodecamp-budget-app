@@ -1,3 +1,5 @@
+from math import floor
+
 from utils import right_pad, left_pad
 
 
@@ -10,6 +12,7 @@ class Category:
         self.name = name
         self.ledger = []
         self.current_balance = 0
+        self.withdraw_amount = 0
 
     def deposit(self, amount: float, description: str = ''):
         self.ledger.append({'amount': amount, 'description': description})
@@ -20,6 +23,7 @@ class Category:
             return False
         self.ledger.append({'amount': -amount, 'description': description})
         self.current_balance -= amount
+        self.withdraw_amount += amount
         return True
 
     def transfer(self, amount: float, destination_category):
@@ -32,6 +36,9 @@ class Category:
 
     def get_balance(self) -> float:
         return self.current_balance
+
+    def get_withdraw_amount(self) -> float:
+        return self.withdraw_amount
 
     def check_funds(self, amount: float) -> bool:
         return amount <= self.get_balance()
@@ -65,5 +72,37 @@ class Category:
         return 'Total: ' + str(self.current_balance)
 
 
-def create_spend_chart(categories):
-    pass
+def create_spend_chart(categories) -> str:
+    total_spending = 0
+    categories_spending = {}
+    max_name_length = 0
+    for category in categories:
+        total_spending += category.get_withdraw_amount()
+        max_name_length = max(max_name_length, len(category.name))
+    for category in categories:
+        categories_spending[category.name] = floor(category.get_withdraw_amount() / total_spending * 100)
+
+    result = 'Percentage spent by category\n'
+    for i in range(0, 11):
+        current_percentage = 100 - (10 * i)
+        result += left_pad(str(current_percentage), length=3) + '|'
+        for category in categories_spending:
+            if categories_spending[category] >= current_percentage:
+                result += ' o '
+            else:
+                result += '   '
+        result += ' \n'
+    result += '    ' + ('-' * len(categories) * 3) + '-\n'
+
+    for i in range(1, max_name_length + 1):
+        result += '    '
+        for category in categories_spending:
+            if len(category) >= i:
+                result += ' ' + category[i - 1] + ' '
+            else:
+                result += '   '
+        if i == max_name_length:
+            result += ' '
+        else:
+            result += ' \n'
+    return result
